@@ -14,10 +14,10 @@ REQUEST_CODE_NAMES = """1 - List all albums
 8 - Quit """
 
 
-def make_request(sock: socket, req_code: RequestCode, req_data: str) -> None:
+def get_request(sock: socket, req_code: RequestCode, req_data: str) -> str:
     checksum = helper.checksum_request(req_code, req_data)
     request = '{}&checksum:{}&data:{}'.format(req_code, checksum, req_data)
-    sock.send(request.encode())
+    return request
 
 
 def get_response(sock: socket) -> str:
@@ -33,11 +33,11 @@ def get_response(sock: socket) -> str:
 
 
 def main():
-    with socket(AF_INET, SOCK_STREAM) as client_socket:
+    with socket(AF_INET, SOCK_STREAM) as sock:
 
         print('Connecting to server... ', end='')
-        client_socket.connect(helper.SERVER_ADDR)
-        welcome_msg = client_socket.recv(1024).decode()
+        sock.connect(helper.SERVER_ADDR)
+        welcome_msg = sock.recv(1024).decode()
         print('connected! \n')
         print(welcome_msg)
 
@@ -45,9 +45,9 @@ def main():
         while stay_connected:
             print(REQUEST_CODE_NAMES)
             req_code = input('Choose an option: ')
-            make_request(client_socket, req_code, 'shine')
+            sock.send(get_request(sock, req_code, 'shine').encode())
 
-            response = client_socket.recv(1024).decode()
+            response = sock.recv(1024).decode()
             print(response)
 
             if int(req_code) == EXIT_REQUEST_CODE:
