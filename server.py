@@ -1,8 +1,8 @@
-import data
+#   import data
 from socket import socket, AF_INET, SOCK_STREAM
 from typing import Tuple
 import helper
-from helper import SERVER_ADDR, RequestCode
+from helper import RequestCode
 
 DEFAULT_RESPONSES = {
     1: 'List albums',
@@ -17,7 +17,7 @@ DEFAULT_RESPONSES = {
 
 EXIT_REQUEST_CODE = 8
 
-WELCOME = 'Welcome to the pink floyd server!1'
+WELCOME = 'Welcome to the pink floyd server!'
 
 
 def get_request_fields(request: str) -> Tuple[RequestCode, str]:
@@ -36,7 +36,7 @@ def get_request_fields(request: str) -> Tuple[RequestCode, str]:
 def get_response(request_code: RequestCode,
                  request_data: str) -> None:
     resp_data = DEFAULT_RESPONSES[int(request_code)]
-    checksum = helper.checksum_data(resp_data)
+    checksum = helper.checksum_response(resp_data)
     response = 'checksum:{}&data:{}'.format(checksum, resp_data)
 
     return response
@@ -44,7 +44,7 @@ def get_response(request_code: RequestCode,
 
 def get_listen_socket() -> socket:
     sock = socket(AF_INET, SOCK_STREAM)
-    sock.bind(SERVER_ADDR)
+    sock.bind(helper.SERVER_ADDR)
     sock.listen(1)
     return sock
 
@@ -57,9 +57,9 @@ def main():
             client_sock, client_addr = listen_sock.accept()
             with client_sock:
                 print('Connected to {}'.format(client_addr))
-                client_sock.send(WELCOME)
+                client_sock.send(WELCOME.encode())
 
-                stay_connected = False
+                stay_connected = True
                 while stay_connected:
                     request = client_sock.recv(1024).decode()
                     print('Client: {}'.format(request))
@@ -71,7 +71,8 @@ def main():
                     print('Server: {}'.format(response))
                     client_sock.send(response.encode())
 
-                    stay_connected = (int(req_code) != EXIT_REQUEST_CODE)
+                    if int(req_code) == EXIT_REQUEST_CODE:
+                        stay_connected = False
 
 
 if __name__ == '__main__':
