@@ -14,3 +14,6 @@ def checksum_response(string: str) -> int:
 def checksum_request(request_code: RequestCode, request_data: str) -> None:
     return checksum_response(request_data) + ord(str(request_code))
 
+
+def is_exit_request_code(req_code: RequestCode):
+    return int(req_code) == 8
