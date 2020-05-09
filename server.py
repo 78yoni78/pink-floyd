@@ -56,22 +56,20 @@ def main():
         while True:
             client_sock, client_addr = listen_sock.accept()
             with client_sock:
-                print('Connected to {}'.format(client_addr))
                 client_sock.send(WELCOME.encode())
+                print('Connected to {}'.format(client_addr))
 
                 stay_connected = True
                 while stay_connected:
                     request = client_sock.recv(1024).decode()
+                    req_code, req_data = get_request_fields(request)
                     print('Client: {}'.format(request))
 
-                    req_code, req_data = get_request_fields(request)
-                    print('{} {}'.format(req_code, req_data))
                     response = get_response(req_code, req_data)
-
                     print('Server: {}'.format(response))
                     client_sock.send(response.encode())
 
-                    if int(req_code) == EXIT_REQUEST_CODE:
+                    if helper.is_exit_request_code(req_code):
                         stay_connected = False
 
 
