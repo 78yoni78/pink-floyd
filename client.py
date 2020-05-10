@@ -42,13 +42,17 @@ def get_response(sock: socket, request: str) -> Optional[str]:
     """ Gets the response of the server to a request.
     :param sock: The socket connected to the server
     :param request: The request.
-    :return: The replay from the server as a string
+    :return: The reply from the server as a string
              If disconnected, returns None.
     """
     try:
         sock.send(request.encode())
 
         response = sock.recv(1025).decode()
+
+        if response.startswith('*ERROR') or response.startswith('*CHECKSUMERROR'):
+            return response
+
         checksum_field, data_field = response.split('&')
         checksum = int(checksum_field[len('checksum:'):])
         resp_data = data_field[len('data:'):]
