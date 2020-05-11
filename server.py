@@ -51,8 +51,15 @@ def get_request_fields(request: str) -> Tuple[RequestCode, str]:
     return request_code, request_data
 
 
-def get_response(request_code: RequestCode,
-                 request_data: str) -> str:
+def get_response(resp_data: str) -> str:
+    checksum = helper.checksum_response(resp_data)
+    response = 'checksum:{}&data:{}'.format(checksum, resp_data)
+
+    return response
+
+
+def get_response_data(request_code: RequestCode,
+                      request_data: str) -> str:
     """ Replys to a request.
     :param request_code: The request type.
     :param request_data: The data field of the request.
@@ -60,10 +67,7 @@ def get_response(request_code: RequestCode,
     """
     #   For now, send a dummy response
     resp_data = DEFAULT_RESPONSES[int(request_code)]
-    checksum = helper.checksum_response(resp_data)
-
-    response = 'checksum:{}&data:{}'.format(checksum, resp_data)
-    return response
+    return resp_data
 
 
 def get_listen_socket() -> socket:
@@ -82,7 +86,7 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
     try:
         client_sock, client_addr = listen_sock.accept()
 
-        client_sock.send(WELCOME.encode())
+        client_sock.send(get_response(WELCOME).encode())
         print('Connected to {}'.format(client_addr))
 
         return client_sock
@@ -106,7 +110,7 @@ def do_request_response(client_sock: socket) -> bool:
             print('Client: {}'.format(request))
             req_code, req_data = get_request_fields(request)
 
-            response = get_response(req_code, req_data)
+            response = get_response(get_response_data(req_code, req_data))
             if helper.is_exit_request_code(req_code):
                 connected = False
 

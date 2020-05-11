@@ -38,6 +38,20 @@ def get_request(req_code: RequestCode, req_data: str) -> str:
     return request
 
 
+def get_response_data(response: str) -> Optional[str]:
+    if response.startswith('*ERROR') or response.startswith('*CHECKSUMERROR'):
+        return response
+
+    checksum_field, data_field = response.split('&')
+    checksum = int(checksum_field[len('checksum:'):])
+    resp_data = data_field[len('data:'):]
+
+    if checksum != helper.checksum_response(resp_data):
+        return None
+
+    return resp_data
+
+
 def get_response(sock: socket, request: str) -> Optional[str]:
     """ Gets the response of the server to a request.
     :param sock: The socket connected to the server
@@ -47,22 +61,13 @@ def get_response(sock: socket, request: str) -> Optional[str]:
     """
     try:
         sock.send(request.encode())
-
         response = sock.recv(1025).decode()
 
-        if response.startswith('*ERROR') or response.startswith('*CHECKSUMERROR'):
-            return response
-
-        checksum_field, data_field = response.split('&')
-        checksum = int(checksum_field[len('checksum:'):])
-        resp_data = data_field[len('data:'):]
-
-        if checksum != helper.checksum_response(resp_data):
-            return None
-
-        return resp_data
     except SocketError:
         return None
+
+    else:
+        return get_response_data(response)
 
 
 def connect_to_server() -> Tuple[socket, str]:
@@ -73,7 +78,7 @@ def connect_to_server() -> Tuple[socket, str]:
     sock = socket(AF_INET, SOCK_STREAM)
     sock.connect(helper.SERVER_ADDR)
 
-    welcome_msg = sock.recv(1024).decode()
+    welcome_msg = get_response_data(sock.recv(1024).decode())
 
     return sock, welcome_msg
 
@@ -130,10 +135,11 @@ def main():
     print('Connecting to server...', end='')
     try:
         sock, welcome_msg = connect_to_server()
-        connected = True
     except SocketError as e:
         print('failure!')
         print('Cannot connect to server. please try again. \n{}'.format(e))
+    else:
+        connected = True
 
     if connected:
         with sock:
