@@ -52,6 +52,11 @@ def get_request_fields(request: str) -> Tuple[RequestCode, str]:
 
 
 def get_response(resp_data: str) -> str:
+    """ Get the data from the response
+    :param response: A response from the server. Example: checksum:743&data:hi
+    :return: The data field OR the error message if successful.
+             May fail if there is a client-side checksum error.
+    """
     checksum = helper.checksum_response(resp_data)
     response = 'checksum:{}&data:{}'.format(checksum, resp_data)
 
@@ -63,7 +68,7 @@ def get_response_data(request_code: RequestCode,
     """ Replys to a request.
     :param request_code: The request type.
     :param request_data: The data field of the request.
-    :return: A response to the request.
+    :return: A response to the request (Only the data - use server_get_response).
     """
     #   For now, send a dummy response
     resp_data = DEFAULT_RESPONSES[int(request_code)]
@@ -128,6 +133,18 @@ def do_request_response(client_sock: socket) -> bool:
     return connected
 
 
+def serve_client(sock: socket) -> None:
+    """ Answers all the requests from the client until disconnect.
+        To be called after accepting a client (accept_client(sock)).
+    :param sock: A socket connected to client. Will be closed afterwards!
+    """
+    with sock:
+        stay_connected = True
+        while stay_connected:
+            stay_connected = do_request_response(sock)
+        print('Client disconnected!')
+
+
 def main():
     with get_listen_socket() as listen_sock:
         print('Server listening')
@@ -136,11 +153,9 @@ def main():
             client_sock = accept_client(listen_sock)
 
             if client_sock is not None:
-                with client_sock:
-                    stay_connected = True
-                    while stay_connected:
-                        stay_connected = do_request_response(client_sock)
-                    print('Client disconnected!')
+                serve_client(client_sock)
+            else:
+                print('Something went wrong with connecting to a client')
 
 
 if __name__ == '__main__':

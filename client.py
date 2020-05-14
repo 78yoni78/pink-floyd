@@ -127,6 +127,25 @@ def do_request_response(sock: socket,
         return True
 
 
+def make_requests_to_server(sock: socket) -> None:
+    """ Makes consecetive requests until disconnected.
+    :param sock: Socket to the server
+    """
+    while True:
+        print(REQUEST_CODE_NAMES)
+        req_code = get_user_number(1, 8)
+
+        #   If the request code requires data, ask for it
+        req_data = ''
+        if req_code in REQUEST_CODE_PROMPTS:
+            req_data = input(REQUEST_CODE_PROMPTS[int(req_code)])
+
+        do_request_response(sock, req_code, req_data)
+
+        if helper.is_exit_request_code(req_code):
+            break
+
+
 def main():
     connected = False
 
@@ -146,19 +165,7 @@ def main():
             print('connected! \n')
             print(welcome_msg)
 
-            while connected:
-                print(REQUEST_CODE_NAMES)
-                req_code = get_user_number(1, 8)
-
-                #   If the request code requires data, ask for it
-                req_data = ''
-                if req_code in REQUEST_CODE_PROMPTS:
-                    req_data = input(REQUEST_CODE_PROMPTS[int(req_code)])
-
-                do_request_response(sock, req_code, req_data)
-
-                if helper.is_exit_request_code(req_code):
-                    connected = False
+            make_requests_to_server(sock)
 
 
 if __name__ == '__main__':
