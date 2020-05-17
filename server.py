@@ -108,7 +108,7 @@ def do_request_response(client_sock: socket, dataset: data.Dataset) -> bool:
             response = helper.make_message_no_checksum(
                 error=str(e))
 
-        print('Server: {}'.format(response.decode()))
+        print('Server: {}'.format(response.decode().replace('\n', ', ')))
         client_sock.send(response)
 
     except SocketError:
