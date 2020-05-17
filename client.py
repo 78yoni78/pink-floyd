@@ -104,7 +104,16 @@ def do_request_response(sock: socket,
               'Try again or check your internet connection.')
         return False
     else:
-        print(response)
+        if 'error' in response:
+            if response['error'] == 'ChecksumError':
+                msg = 'An error has uccoured. Please try again.'
+            msg = response['error']
+        elif 'data' in response:
+            msg = response['data']
+        else:
+            msg = response
+
+        print(msg)
         return True
 
 
