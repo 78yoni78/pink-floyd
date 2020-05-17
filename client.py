@@ -139,10 +139,8 @@ def make_requests_to_server(sock: socket) -> bool:
             return True
 
 
-def main():
+def start_conversation() -> None:
     connected = False
-
-    do_user_login()
 
     print('Connecting to server...', end='')
     try:
@@ -158,7 +156,21 @@ def main():
             print('connected! \n')
             print(welcome_msg)
 
-            make_requests_to_server(sock)
+            success = make_requests_to_server(sock)
+            if not success:
+                print('Oops! It seams you were disconnected. '
+                      'Check your internet connection.')
+                reconnect = input('Would you like to try reconnecting? y/n: ')
+                if reconnect == 'y':
+                    start_conversation()
+
+
+def main():
+
+    do_user_login()
+
+    start_conversation()
+
 
 
 if __name__ == '__main__':
