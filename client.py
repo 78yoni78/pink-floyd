@@ -114,6 +114,7 @@ def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
         msg = response
 
     print(msg)
+    print('')
     return True
 
 
@@ -139,25 +140,32 @@ def make_requests_to_server(sock: socket) -> bool:
             return True
 
 
+def ask_for_reconnect() -> bool:
+    reconnect = input('Would you like to try reconnecting? y/n: ')
+    return reconnect == 'y'
+
+
 def start_conversation() -> None:
     print('Connecting to server...', end='')
     try:
         sock, welcome_msg = connect_to_server()
-    except SocketError as e:
-        print('failure!')
-        print('Cannot connect to server. please try again.')
-        print(e)
+    except SocketError:
+        print('failure! \n\n')
+        print('Cannot connect to server. '
+              'Check your internet connection. '
+              'Please try again.')
+        if ask_for_reconnect():
+            start_conversation()
     else:
         with sock:
-            print('connected! \n')
+            print('connected! \n\n')
             print(welcome_msg)
 
             success = make_requests_to_server(sock)
             if not success:
                 print('Oops! It seams you were disconnected. '
                       'Check your internet connection.')
-                reconnect = input('Would you like to try reconnecting? y/n: ')
-                if reconnect == 'y':
+                if ask_for_reconnect():
                     start_conversation()
 
 
