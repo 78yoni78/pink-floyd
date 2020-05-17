@@ -1,78 +1,47 @@
-#   import data
 from socket import socket, AF_INET, SOCK_STREAM, error as SocketError
-from typing import Tuple, Optional
+from typing import Optional
+from collections.abc import Iterable
+import data
 import helper
-from helper import RequestCode
 
-DEFAULT_RESPONSES = {
-    1: 'List albums',
-    2: 'List album song',
-    3: 'Song length',
-    4: 'Song lyrics',
-    5: 'Song album',
-    6: 'Search song by name',
-    7: 'Search song by lyrics',
-    8: 'Quit',
+RESPONSES = {
+    1: lambda x, y: data.get_albums(x),
+    2: data.get_songs_in,
+    3: data.get_song_length,
+    4: data.get_song_lyrics,
+    5: data.get_song_album,
+    6: data.search_song_by_name,
+    7: data.search_song_by_lyrics,
+    8: lambda x, y: 'Goodbye!',
 }
-
-EXIT_REQUEST_CODE = 8
 
 WELCOME = 'Welcome to the pink floyd server!'
 
-
-class ServerError(Exception):
-    def __init__(self, message):
-        self.message = message
+DATASET_FILE_PATH = 'Pink_Floyd_DB.txt'
 
 
-class ChecksumError(Exception):
-    pass
-
-
-def get_request_fields(request: str) -> Tuple[RequestCode, str]:
-    """ Parses the request and returns the data.
-    :param request: The request
-    :return: The request code and the data field.
-    :throws: ServerError
-    """
-    try:
-        request_code, checksum_field, data_field = request.split('&')
-    except ValueError:
-        raise ServerError('Incorrect requst format! Must be '
-                          '<code>&checksum:<checksum>&data:<data>')
-
-    request_checksum = int(checksum_field[len('checksum:'):])
-    request_data = data_field[len('data:'):]
-    helper.checksum_request(request_code, request_data)
-
-    if request_checksum != helper.checksum_request(request_code, request_data):
-        raise ChecksumError()
-
-    return request_code, request_data
-
-
-def get_response(resp_data: str) -> str:
-    """ Get the data from the response
-    :param response: A response from the server. Example: checksum:743&data:hi
-    :return: The data field OR the error message if successful.
-             May fail if there is a client-side checksum error.
-    """
-    checksum = helper.checksum_response(resp_data)
-    response = 'checksum:{}&data:{}'.format(checksum, resp_data)
-
-    return response
-
-
-def get_response_data(request_code: RequestCode,
+def get_response_data(dataset: data.Dataset,
+                      request_code: int,
                       request_data: str) -> str:
     """ Replys to a request.
     :param request_code: The request type.
     :param request_data: The data field of the request.
-    :return: A response to the request (Only the data - use server_get_response).
+    :param dataset: The dataset the server uses.
+    :return: A response to the request
+             (Only the data - use server_get_response).
     """
-    #   For now, send a dummy response
-    resp_data = DEFAULT_RESPONSES[int(request_code)]
-    return resp_data
+    resp_func = RESPONSES[request_code]
+    response_value = resp_func(dataset, request_data.lower())
+
+    if (isinstance(response_value, Iterable) and
+            not isinstance(response_value, str)):
+        msg = '\n'.join(response_value)
+    elif response_value is None:
+        msg = 'Parameter was not found'
+    else:
+        msg = str(response_value)
+
+    return msg
 
 
 def get_listen_socket() -> socket:
@@ -91,7 +60,7 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
     try:
         client_sock, client_addr = listen_sock.accept()
 
-        client_sock.send(get_response(WELCOME).encode())
+        client_sock.send(helper.make_message_no_checksum(data=WELCOME))
         print('Connected to {}'.format(client_addr))
 
         return client_sock
@@ -103,29 +72,39 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
         return None
 
 
-def do_request_response(client_sock: socket) -> bool:
+def do_request_response(client_sock: socket, dataset: data.Dataset) -> bool:
     """ Will respond to the next request from the client.
     :param client_sock: The connection to the client.
+    :param dataset: The dataset the server uses.
     :return: True if succesful, False if client disconnected.
     """
     try:
         connected = True
         try:
-            request = client_sock.recv(1024).decode()
-            print('Client: {}'.format(request))
-            req_code, req_data = get_request_fields(request)
+            request = client_sock.recv(1024)
+            print('Client: {}'.format(request.decode()))
+            # req_code, req_data = get_request_fields(request)
+            request_dict = helper.parse_message(request)
 
-            response = get_response(get_response_data(req_code, req_data))
+            if 'code' not in request_dict or 'data' not in request_dict:
+                raise helper.Error('Message need a code '
+                                   'field and a data field!')
+
+            req_code = int(request_dict['code'])
+            req_data = request_dict['data']
+
+            resposne_data = get_response_data(dataset, req_code, req_data)
+            response = helper.make_message(data=resposne_data)
             if helper.is_exit_request_code(req_code):
                 connected = False
 
-        except ChecksumError:
+        except helper.ChecksumError:
             response = '*CHECKSUMERROR'
-        except ServerError:
+        except helper.Error:
             response = '*ERROR'
 
-        print('Server: {}'.format(response))
-        client_sock.send(response.encode())
+        print('Server: {}'.format(response.decode()))
+        client_sock.send(response)
 
     except SocketError:
         connected = False
@@ -133,19 +112,25 @@ def do_request_response(client_sock: socket) -> bool:
     return connected
 
 
-def serve_client(sock: socket) -> None:
+def serve_client(sock: socket, dataset: data.Dataset) -> None:
     """ Answers all the requests from the client until disconnect.
         To be called after accepting a client (accept_client(sock)).
     :param sock: A socket connected to client. Will be closed afterwards!
+    :param dataset: The dataset the server uses.
     """
     with sock:
         stay_connected = True
         while stay_connected:
-            stay_connected = do_request_response(sock)
+            stay_connected = do_request_response(sock, dataset)
         print('Client disconnected!')
 
 
 def main():
+
+    with open(DATASET_FILE_PATH, 'r') as file:
+        text = file.read()
+        dataset = data.parse_dataset(text)
+
     with get_listen_socket() as listen_sock:
         print('Server listening')
 
@@ -153,7 +138,7 @@ def main():
             client_sock = accept_client(listen_sock)
 
             if client_sock is not None:
-                serve_client(client_sock)
+                serve_client(client_sock, dataset)
             else:
                 print('Something went wrong with connecting to a client')
 

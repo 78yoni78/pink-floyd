@@ -1,8 +1,8 @@
 from socket import socket, AF_INET, SOCK_STREAM, error as SocketError
 from typing import Tuple, Optional
+import hashlib
 
 import helper
-from helper import RequestCode
 
 REQUEST_CODE_NAMES = """1 - List all albums
 2 - List album song
@@ -26,33 +26,14 @@ REQUEST_CODE_PROMPTS = {
 PASSWORD = 'Pink Floyd'
 
 
-def get_request(req_code: RequestCode, req_data: str) -> str:
-    """ Returns a string repressenting a request
-    :param req_code: The request code repressenting which type
-                     of request is being sent
-    :param req_data: The parameters fed to the request
-    :return: The string to be sent as the response to the server
-    """
-    checksum = helper.checksum_request(req_code, req_data)
-    request = '{}&checksum:{}&data:{}'.format(req_code, checksum, req_data)
-    return request
+def encrypt_password(password: str):
+    return hashlib.pbkdf2_hmac('sha256',
+                               password.encode(),
+                               b'de71446e074cb947baf6',
+                               31703).hex()
 
 
-def get_response_data(response: str) -> Optional[str]:
-    if response.startswith('*ERROR') or response.startswith('*CHECKSUMERROR'):
-        return response
-
-    checksum_field, data_field = response.split('&')
-    checksum = int(checksum_field[len('checksum:'):])
-    resp_data = data_field[len('data:'):]
-
-    if checksum != helper.checksum_response(resp_data):
-        return None
-
-    return resp_data
-
-
-def get_response(sock: socket, request: str) -> Optional[str]:
+def get_response(sock: socket, request: bytes) -> Optional[str]:
     """ Gets the response of the server to a request.
     :param sock: The socket connected to the server
     :param request: The request.
@@ -60,14 +41,14 @@ def get_response(sock: socket, request: str) -> Optional[str]:
              If disconnected, returns None.
     """
     try:
-        sock.send(request.encode())
-        response = sock.recv(1025).decode()
+        sock.send(request)
+        response = sock.recv(1025)
 
     except SocketError:
         return None
 
     else:
-        return get_response_data(response)
+        return helper.parse_message(response)['data']
 
 
 def connect_to_server() -> Tuple[socket, str]:
@@ -78,7 +59,7 @@ def connect_to_server() -> Tuple[socket, str]:
     sock = socket(AF_INET, SOCK_STREAM)
     sock.connect(helper.SERVER_ADDR)
 
-    welcome_msg = get_response_data(sock.recv(1024).decode())
+    welcome_msg = helper.parse_message(sock.recv(1024))['data']
 
     return sock, welcome_msg
 
@@ -107,7 +88,7 @@ def do_user_login():
 
 
 def do_request_response(sock: socket,
-                        req_code: RequestCode,
+                        req_code: int,
                         req_data: str) -> bool:
     """ Prints the result of the request to the user.
     :param sock: The connection to the server
@@ -115,7 +96,7 @@ def do_request_response(sock: socket,
     :param req_data: The data field of the request
     :return: True if succesful, False if connection error
     """
-    request = get_request(req_code, req_data)
+    request = helper.make_message(code=req_code, data=req_data)
     response = get_response(sock, request)
 
     if response is None:
