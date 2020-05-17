@@ -9,12 +9,13 @@ NAME_VALUE_SEP = ':'
 
 
 class Error(Exception):
-    def __init__(self, message):
-        self.message = message
+    pass
 
 
 class ChecksumError(Error):
-    pass
+    def __init__(self, actual_checksum, expected_checksum):
+        super().__init__('Expected checksum of {} but got {}'
+                         .format(actual_checksum, expected_checksum))
 
 
 def is_exit_request_code(req_code: int):
@@ -73,6 +74,6 @@ def parse_message(message: bytes) -> Optional[Dict[str, str]]:
         my_checksum = int(checksum(**no_checksum_dict))
         his_checksum = int(ret['checksum'])
         if his_checksum != my_checksum:
-            raise ChecksumError('')
+            raise ChecksumError(my_checksum, his_checksum)
 
     return ret
