@@ -9,6 +9,7 @@ NAME_VALUE_SEP = ':'
 
 
 class Error(Exception):
+    """ An error in the protocol """
     pass
 
 
