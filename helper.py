@@ -15,6 +15,8 @@ class Error(Exception):
 
 class ChecksumError(Error):
     def __init__(self, actual_checksum, expected_checksum):
+        self.actual_checksum = actual_checksum
+        self.expected_checksum = expected_checksum
         super().__init__('Expected checksum of {} but got {}'
                          .format(actual_checksum, expected_checksum))
 
