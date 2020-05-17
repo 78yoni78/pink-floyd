@@ -119,9 +119,10 @@ def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
         return True
 
 
-def make_requests_to_server(sock: socket) -> None:
+def make_requests_to_server(sock: socket) -> bool:
     """ Makes consecetive requests until disconnected.
     :param sock: Socket to the server
+    :return: True if successful, False if connection error
     """
     while True:
         print(REQUEST_CODE_NAMES)
@@ -132,10 +133,12 @@ def make_requests_to_server(sock: socket) -> None:
         if req_code in REQUEST_CODE_PROMPTS:
             req_data = input(REQUEST_CODE_PROMPTS[int(req_code)])
 
-        do_request_response(sock, req_code, req_data)
+        success = do_request_response(sock, req_code, req_data)
+        if not success:
+            return False
 
         if helper.is_exit_request_code(req_code):
-            break
+            return True
 
 
 def main():
