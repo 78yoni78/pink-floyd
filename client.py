@@ -109,7 +109,8 @@ def do_request_response(sock: socket,
                 msg = ('An error has uccoured. '
                        'Please try again. '
                        'Are you using an official client?')
-            msg = response['error']
+            else:
+                msg = response['error']
         elif 'data' in response:
             msg = response['data']
         else:
