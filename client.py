@@ -98,25 +98,23 @@ def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
     response = get_response(sock, request)
 
     if response is None:
-        print('Oops! It seams you were disconnected. '
-              'Try again or check your internet connection.')
         return False
-    else:
-        if 'error' in response:
-            if response['error'] == 'checksumerror':
-                msg = ('An error has uccoured. '
-                       'Please try again. '
-                       'Are you using an official client?')
-            else:
-                msg = response['error']
-        elif 'data' in response:
-            msg = response['data']
-        else:
-            print('The server sent a weird message: ')
-            msg = response
 
-        print(msg)
-        return True
+    if 'error' in response:
+        if response['error'] == 'checksumerror':
+            msg = ('An error has uccoured. '
+                   'Please try again. '
+                   'Are you using an official client?')
+        else:
+            msg = response['error']
+    elif 'data' in response:
+        msg = response['data']
+    else:
+        print('The server sent a weird message: ')
+        msg = response
+
+    print(msg)
+    return True
 
 
 def make_requests_to_server(sock: socket) -> bool:
