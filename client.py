@@ -87,6 +87,26 @@ def do_user_login():
         user_password = input('Enter the password: ')
 
 
+def format_msg(message: Dict[str, str]) -> str:
+    """ Takes a dictionary that repressents the server's message (such
+        as returned by helper.parse_message or make_message) and turn it into a
+        human readable string depending on it's fields.
+    :param message: The server's message.
+                    Entries in the dict are fields of the message.
+    :return: A human readable string.
+    """
+    if 'error' in message:
+        return ('An error has uccoured. '
+                'Please try again. '
+                'Are you using an official client?'
+                if message['error'] == 'checksumerror'
+                else message['error'])
+    elif 'data' in message:
+        return message['data']
+    else:
+        return 'Unknown message format: \n{}'.format(message)
+
+
 def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
     """ Prints the result of the request to the user.
     :param sock: The connection to the server
@@ -100,20 +120,7 @@ def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
     if response is None:
         return False
 
-    if 'error' in response:
-        if response['error'] == 'checksumerror':
-            msg = ('An error has uccoured. '
-                   'Please try again. '
-                   'Are you using an official client?')
-        else:
-            msg = response['error']
-    elif 'data' in response:
-        msg = response['data']
-    else:
-        print('The server sent a weird message: ')
-        msg = response
-
-    print(msg)
+    print(format_msg(response))
     print('')
     return True
 
