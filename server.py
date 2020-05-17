@@ -98,10 +98,15 @@ def do_request_response(client_sock: socket, dataset: data.Dataset) -> bool:
             if helper.is_exit_request_code(req_code):
                 connected = False
 
-        except helper.ChecksumError:
-            response = '*CHECKSUMERROR'
-        except helper.Error:
-            response = '*ERROR'
+        except helper.ChecksumError as e:
+            response = helper.make_message_no_checksum(
+                error='ChecksumError',
+                actual=e.actual_checksum,
+                expected=e.expected_checksum)
+
+        except helper.Error as e:
+            response = helper.make_message_no_checksum(
+                error=str(e))
 
         print('Server: {}'.format(response.decode()))
         client_sock.send(response)
