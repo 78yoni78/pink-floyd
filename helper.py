@@ -77,6 +77,7 @@ def parse_message(message: bytes) -> Optional[Dict[str, str]]:
         my_checksum = int(checksum(**no_checksum_dict))
         his_checksum = int(ret['checksum'])
         if his_checksum != my_checksum:
-            raise ChecksumError(my_checksum, his_checksum)
+            raise ChecksumError(expected_checksum=my_checksum,
+                                actual_checksum=his_checksum)
 
     return ret
