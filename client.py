@@ -87,9 +87,7 @@ def do_user_login():
         user_password = input('Enter the password: ')
 
 
-def do_request_response(sock: socket,
-                        req_code: int,
-                        req_data: str) -> bool:
+def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
     """ Prints the result of the request to the user.
     :param sock: The connection to the server
     :param req_code: The request code
