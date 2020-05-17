@@ -140,18 +140,14 @@ def make_requests_to_server(sock: socket) -> bool:
 
 
 def start_conversation() -> None:
-    connected = False
-
     print('Connecting to server...', end='')
     try:
         sock, welcome_msg = connect_to_server()
     except SocketError as e:
         print('failure!')
-        print('Cannot connect to server. please try again. \n{}'.format(e))
+        print('Cannot connect to server. please try again.')
+        print(e)
     else:
-        connected = True
-
-    if connected:
         with sock:
             print('connected! \n')
             print(welcome_msg)
