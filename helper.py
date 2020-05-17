@@ -25,14 +25,6 @@ def is_exit_request_code(req_code: int):
     return req_code == 8
 
 
-# def checksum_response(string: str) -> int:
-#     return sum(map(ord, string))
-
-
-# def checksum_request(request_code: int, request_data: str) -> None:
-#     return checksum_response(request_data) + ord(str(request_code))
-
-
 def checksum(**kwargs) -> int:
     return sum(sum(map(ord, name + str(value)))
                for name, value in kwargs.items())
