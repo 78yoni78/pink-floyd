@@ -1,3 +1,4 @@
+import hashlib
 from typing import Optional, Dict
 
 SERVER_PORT = 1973
@@ -25,9 +26,26 @@ def is_exit_request_code(req_code: int):
     return req_code == 8
 
 
+def hash_field(field_name: str, field_value) -> str:
+    """ A uniqe hash to use for checksums and such with message's fields.
+    :param: The name of the field. Case ignored.
+    :param: The value of the field. Can be any object. Case ignored.
+    :return: A very random string
+    """
+    salted_input = '1d{}7cd4{}914c'.format(field_name, field_value).lower()
+    return hashlib.md5(salted_input.encode()).hexdigest()
+
+
 def checksum(**kwargs) -> int:
-    return sum(sum(map(ord, name.lower() + str(value).lower()))
-               for name, value in kwargs.items())
+    """ The checksum of a message.
+    :param kwargs: The fields of the message.
+                   Use as you would use in make_message.
+                   'checksum' fields will NOT be ignored.
+    :return: The checksum of the message.
+    """
+    very_big_random_string = ''.join(hash_field(name, value)
+                                     for name, value in kwargs.items())
+    return sum(map(ord, very_big_random_string)) % 10_000
 
 
 def make_message_no_checksum(**kwargs) -> bytes:
@@ -37,7 +55,7 @@ def make_message_no_checksum(**kwargs) -> bytes:
     :param kwargs: The fields.
     :return: The message in the format of the protocol.
     """
-    fields = ('{}{}{}'.format(name.lower(), NAME_VALUE_SEP, value.lower())
+    fields = ('{}{}{}'.format(name, NAME_VALUE_SEP, value).lower()
               for name, value in kwargs.items())
 
     return FIELD_SEP.join(fields).encode()
