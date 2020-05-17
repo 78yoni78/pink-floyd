@@ -26,7 +26,7 @@ def is_exit_request_code(req_code: int):
 
 
 def checksum(**kwargs) -> int:
-    return sum(sum(map(ord, name + str(value)))
+    return sum(sum(map(ord, name.lower() + str(value).lower()))
                for name, value in kwargs.items())
 
 
@@ -37,7 +37,7 @@ def make_message_no_checksum(**kwargs) -> bytes:
     :param kwargs: The fields.
     :return: The message in the format of the protocol.
     """
-    fields = ('{}{}{}'.format(name, NAME_VALUE_SEP, value)
+    fields = ('{}{}{}'.format(name.lower(), NAME_VALUE_SEP, value.lower())
               for name, value in kwargs.items())
 
     return FIELD_SEP.join(fields).encode()
