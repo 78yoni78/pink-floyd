@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_STREAM, error as SocketError
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 import hashlib
 
 import helper
