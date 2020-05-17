@@ -26,7 +26,8 @@ REQUEST_CODE_PROMPTS = {
 PASSWORD = 'Pink Floyd'
 
 
-def encrypt_password(password: str):
+
+def encrypt_password(password: str) -> str:
     return hashlib.pbkdf2_hmac('sha256',
                                password.encode(),
                                b'de71446e074cb947baf6',
