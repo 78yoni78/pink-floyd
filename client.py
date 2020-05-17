@@ -112,6 +112,7 @@ def do_request_response(sock: socket, req_code: int, req_data: str) -> bool:
         elif 'data' in response:
             msg = response['data']
         else:
+            print('The server sent a weird message: ')
             msg = response
 
         print(msg)
