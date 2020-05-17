@@ -105,7 +105,7 @@ def do_request_response(sock: socket,
         return False
     else:
         if 'error' in response:
-            if response['error'] == 'ChecksumError':
+            if response['error'] == 'checksumerror':
                 msg = ('An error has uccoured. '
                        'Please try again. '
                        'Are you using an official client?')

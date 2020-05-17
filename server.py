@@ -36,6 +36,8 @@ def get_response_data(dataset: data.Dataset,
     if (isinstance(response_value, Iterable) and
             not isinstance(response_value, str)):
         msg = '\n'.join(response_value)
+    elif isinstance(response_value, float):
+        msg = '{:.2f}'.format(response_value)
     elif response_value is None:
         msg = 'Parameter was not found'
     else:
@@ -100,7 +102,7 @@ def do_request_response(client_sock: socket, dataset: data.Dataset) -> bool:
 
         except helper.ChecksumError as e:
             response = helper.make_message_no_checksum(
-                error='ChecksumError',
+                error='checksumerror',
                 actual=e.actual_checksum,
                 expected=e.expected_checksum)
 
