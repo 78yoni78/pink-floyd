@@ -33,7 +33,7 @@ def encrypt_password(password: str):
                                31703).hex()
 
 
-def get_response(sock: socket, request: bytes) -> Optional[str]:
+def get_response(sock: socket, request: bytes) -> Optional[Dict[str, str]]:
     """ Gets the response of the server to a request.
     :param sock: The socket connected to the server
     :param request: The request.
@@ -48,7 +48,7 @@ def get_response(sock: socket, request: bytes) -> Optional[str]:
         return None
 
     else:
-        return helper.parse_message(response)['data']
+        return helper.parse_message(response)
 
 
 def connect_to_server() -> Tuple[socket, str]:
