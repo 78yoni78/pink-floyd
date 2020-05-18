@@ -24,12 +24,11 @@ PASSWORD_FILE_PATH = 'Passwords.txt'
 def get_response_data(dataset: data.Dataset,
                       request_code: int,
                       request_data: str) -> str:
-    """ Replys to a request.
+    """ Takes a python object and turns it into a string that the client can read.
+    :param dataset: The dataset the server uses.
     :param request_code: The request type.
     :param request_data: The data field of the request.
-    :param dataset: The dataset the server uses.
-    :return: A response to the request
-             (Only the data - use server_get_response).
+    :return: A string to be read by the client
     """
     resp_func = RESPONSES[request_code]
     response_value = resp_func(dataset, request_data.lower())
