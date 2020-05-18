@@ -36,6 +36,8 @@ def get_response_data(dataset: data.Dataset,
     if (isinstance(response_value, Iterable) and
             not isinstance(response_value, str)):
         msg = '\n'.join(response_value)
+        if msg == '':
+            msg = 'Empty list'
     elif isinstance(response_value, float):
         msg = '{:.2f}'.format(response_value)
     elif response_value is None:
