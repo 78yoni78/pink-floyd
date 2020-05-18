@@ -122,7 +122,9 @@ def password_matchs_username(passwords_file_name: str,
         text = file.read()
 
     logins: Dict[str, str] = from_json(text)
-    logged_password = logins[username]
+    logged_password = logins.get(username)
+    if logged_password is None:
+        return False
     return password_compare(logged_password, password)
 
 
