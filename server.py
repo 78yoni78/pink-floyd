@@ -1,5 +1,5 @@
 from socket import socket, AF_INET, SOCK_STREAM, error as SocketError
-from typing import Optional
+from typing import Optional, Dict
 from collections.abc import Iterable
 import data
 import helper
@@ -55,6 +55,29 @@ def get_listen_socket() -> socket:
     return sock
 
 
+def recv(sock: socket) -> Dict[str, str]:
+    """ Receives a message from the client and prints it.
+    :param sock: The socket with the client.
+    :return: A dictionary as returned by helper.parse_message.
+    """
+    message = sock.recv(1024)
+    print('Client: {}'.format(message.decode()))
+    return helper.parse_message(message)
+
+
+def send(sock: socket, checksum: bool = True, **kwargs) -> None:
+    """ Sends a message to the client and prints it.
+    :param sock: The client socket.
+    :param checksum: Wether or not a checksum should be included. Default True.
+    :param kwargs: The fields of the message, like in helper.make_message.
+    """
+    message = (helper.make_message(**kwargs)
+               if checksum else
+               helper.make_message_no_checksum(**kwargs))
+    print('Server: {}'.format(message.decode().replace('\n', ', ')))
+    sock.send(message)
+
+
 def accept_client(listen_sock: socket) -> Optional[socket]:
     """ Tries accepting the next client.
     :param listen_sock: The socket listening on the server address.
@@ -63,10 +86,8 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
     """
     try:
         client_sock, client_addr = listen_sock.accept()
-
-        client_sock.send(helper.make_message_no_checksum(data=WELCOME))
         print('Connected to {}'.format(client_addr))
-
+        send(client_sock, checksum=False, data=WELCOME)
         return client_sock
 
     except SocketError:
@@ -76,49 +97,63 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
         return None
 
 
-def do_request_response(client_sock: socket, dataset: data.Dataset) -> bool:
+def get_user(sock: socket) -> Optional[str]:
+    try:
+        login_request = recv(sock)
+        username = login_request['username']
+        password = login_request['password']
+
+        login_func = (data.add_new_user
+                      if 'new_user' in login_request else
+                      data.password_matchs_username)
+        login_successful = login_func(PASSWORD_FILE_PATH, username, password)
+
+        if login_successful:
+            print('User successfuly logged in!')
+            send(sock, login_successful='')
+            return username
+        else:
+            send(sock, error='Invalid username or password')
+            return None
+    except SocketError:
+        return None
+
+
+def do_request_response(sock: socket, dataset: data.Dataset) -> bool:
     """ Will respond to the next request from the client.
-    :param client_sock: The connection to the client.
+    :param sock: The connection to the client.
     :param dataset: The dataset the server uses.
     :return: True if succesful, False if client disconnected.
     """
     try:
-        connected = True
-        try:
-            request = client_sock.recv(1024)
-            print('Client: {}'.format(request.decode()))
-            # req_code, req_data = get_request_fields(request)
-            request_dict = helper.parse_message(request)
+        request = recv(sock)
 
-            if 'code' not in request_dict or 'data' not in request_dict:
-                raise helper.Error('Message need a code '
-                                   'field and a data field!')
+        if 'code' not in request or 'data' not in request:
+            raise helper.Error('Message need a code '
+                               'field and a data field!')
 
-            req_code = int(request_dict['code'])
-            req_data = request_dict['data']
+        req_code = int(request['code'])
+        req_data = request['data']
 
-            resposne_data = get_response_data(dataset, req_code, req_data)
-            response = helper.make_message(data=resposne_data)
-            if helper.is_exit_request_code(req_code):
-                connected = False
+        resposne_data = get_response_data(dataset, req_code, req_data)
+        send(sock, data=resposne_data)
 
-        except helper.ChecksumError as e:
-            response = helper.make_message_no_checksum(
-                error='checksumerror',
-                actual=e.actual_checksum,
-                expected=e.expected_checksum)
+        if helper.is_exit_request_code(req_code):
+            return False
 
-        except helper.Error as e:
-            response = helper.make_message_no_checksum(
-                error=str(e))
+    except helper.ChecksumError as e:
+        send(sock, False,
+             error='checksumerror',
+             actual=e.actual_checksum,
+             expected=e.expected_checksum)
 
-        print('Server: {}'.format(response.decode().replace('\n', ', ')))
-        client_sock.send(response)
+    except helper.Error as e:
+        send(sock, False, error=str(e))
 
     except SocketError:
-        connected = False
+        return False
 
-    return connected
+    return True
 
 
 def serve_client(sock: socket, dataset: data.Dataset) -> None:
@@ -142,14 +177,18 @@ def main():
 
     with get_listen_socket() as listen_sock:
         print('Server listening')
-
         while True:
             client_sock = accept_client(listen_sock)
 
-            if client_sock is not None:
-                serve_client(client_sock, dataset)
-            else:
+            if client_sock is None:
                 print('Something went wrong with connecting to a client')
+            else:
+                username = get_user(client_sock)
+
+                if username is None:
+                    print('User could not log in')
+                else:
+                    serve_client(client_sock, dataset)
 
 
 if __name__ == '__main__':
