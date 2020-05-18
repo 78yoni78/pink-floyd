@@ -18,6 +18,7 @@ RESPONSES = {
 WELCOME = 'Welcome to the pink floyd server!'
 
 DATASET_FILE_PATH = 'Pink_Floyd_DB.txt'
+PASSWORD_FILE_PATH = 'Passwords.txt'
 
 
 def get_response_data(dataset: data.Dataset,
