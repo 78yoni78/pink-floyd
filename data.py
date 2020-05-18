@@ -146,6 +146,6 @@ def add_new_user(passwords_file_name: str,
 
         logins[username] = password
         file.seek(0)
-        file.write(to_json(logins))
+        file.write(to_json(logins, indent=4))
         file.truncate()
         return True
