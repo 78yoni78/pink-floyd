@@ -147,6 +147,3 @@ def add_new_user(passwords_file_name: str,
         file.write(to_json(logins))
         file.truncate()
         return True
-
-
-fname = 'login.txt'
