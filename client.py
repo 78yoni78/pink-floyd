@@ -25,6 +25,7 @@ REQUEST_CODE_PROMPTS = {
 
 PASSWORD = 'Pink Floyd'
 
+logged_user = None
 
 
 def encrypt_password(password: str) -> str:
@@ -82,10 +83,48 @@ def get_user_number(min: int, max: int) -> int:
     return get_user_number(min, max)
 
 
-def do_user_login():
-    user_password = ''
-    while user_password != PASSWORD:
-        user_password = input('Enter the password: ')
+def do_user_login(sock: socket):
+    # user_password = ''
+    # while user_password != PASSWORD:
+    #     user_password = input('Enter the password: ')
+    global logged_user
+    if logged_user is not None:
+        sign_out = input('You are already logged in as {}. '
+                         'Would you like to sign out? y/n: '
+                         .format(logged_user[0]))
+        if sign_out == 'y':
+            logged_user = None
+        else:
+            msg = helper.make_message(username=logged_user[0],
+                                      password=logged_user[1])
+
+    if logged_user is None:
+        if input('Do you have an account on our server? y/n: ') == 'y':
+            username = input('Enter your username: ')
+            password = input('Enter your password: ')
+            password = encrypt_password(password)
+            msg = helper.make_message(username=username, password=password)
+        else:
+            proceed = 'n'
+            while proceed != 'y':
+                print("Let's create an account.")
+                username = input('New acount username: ')
+                password = input('New acount password: ')
+                print('You are going to create an account '
+                      'named {} with password {}'.format(username, password))
+                password = encrypt_password(password)
+                proceed = input('Are you sure you want to proceed? y/n: ')
+                if proceed == 'y':
+                    msg = helper.make_message(username=username,
+                                              password=password,
+                                              new_user='')
+    logged_user = (username, password)
+    sock.send(msg)
+    response = helper.parse_message(sock.recv(1024))
+    if 'login_successful' not in response:
+        print(format_msg(response))
+        logged_user = None
+        do_user_login(sock)
 
 
 def format_msg(message: Dict[str, str]) -> str:
@@ -169,6 +208,8 @@ def start_conversation() -> None:
             print('connected! \n\n')
             print(welcome_msg)
 
+            do_user_login(sock)
+
             success = make_requests_to_server(sock)
             if not success:
                 print('Oops! It seams you were disconnected. '
@@ -178,9 +219,6 @@ def start_conversation() -> None:
 
 
 def main():
-
-    do_user_login()
-
     start_conversation()
 
 
