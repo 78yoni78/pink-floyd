@@ -129,15 +129,24 @@ def password_matchs_username(passwords_file_name: str,
 def add_new_user(passwords_file_name: str,
                  username: str,
                  password: str) -> bool:
-    """ Adds a new user with a username and password. """
+    """ Adds a new user with a username and password.
+    :param passwords_file_name: File name or path to the text file containing
+                                json for all the users.
+    :param username: The username of the new user.
+    :param password: The password of the new user. Should be encrypted.
+    :return: True if successful, False if a user of the same username exists.
+    """
     with open(passwords_file_name, 'r+') as file:
         logins = from_json(file.read())
-        if username not in logins:
-            logins[username] = password
-            file.seek(0)
-            file.write(to_json(logins))
-            file.truncate()
-    return True
+
+        if username in logins:
+            return False
+
+        logins[username] = password
+        file.seek(0)
+        file.write(to_json(logins))
+        file.truncate()
+        return True
 
 
 fname = 'login.txt'
