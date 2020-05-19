@@ -55,7 +55,7 @@ def get_listen_socket() -> socket:
     return sock
 
 
-def recv(sock: socket) -> Dict[str, str]:
+def recieve(sock: socket) -> Dict[str, str]:
     """ Receives a message from the client and prints it.
     :param sock: The socket with the client.
     :return: A dictionary as returned by helper.parse_message.
@@ -99,7 +99,7 @@ def accept_client(listen_sock: socket) -> Optional[socket]:
 
 def get_user(sock: socket) -> Optional[str]:
     try:
-        login_request = recv(sock)
+        login_request = recieve(sock)
         username = login_request['username']
         password = login_request['password']
 
@@ -126,7 +126,7 @@ def do_request_response(sock: socket, dataset: data.Dataset) -> bool:
     :return: True if succesful, False if client disconnected.
     """
     try:
-        request = recv(sock)
+        request = recieve(sock)
 
         if 'code' not in request or 'data' not in request:
             raise helper.Error('Message need a code '
